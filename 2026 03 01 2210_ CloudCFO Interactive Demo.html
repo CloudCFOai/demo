@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudCFO — Interactive Demo | Startup Maroc 2030</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{colors:{brand:{50:'#f0fdf6',100:'#dcfce8',200:'#bbf7d1',300:'#86efad',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16'},gold:{400:'#fbbf24',500:'#f59e0b',600:'#d97706'},surface:{50:'#fafbfc',100:'#f4f6f8',200:'#e8ecf0'}},fontFamily:{heading:['Playfair Display','Georgia','serif'],body:['Inter','system-ui','sans-serif']}}}}
+</script>
+<style>
+*,*::before,*::after{font-family:'Inter',system-ui,sans-serif}
+h1,h2,h3,.font-heading{font-family:'Playfair Display','Georgia',serif}
+html{scroll-behavior:smooth}
+body{overflow:hidden;height:100vh}
+
+/* Nav Shell */
+.demo-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-bottom:1px solid #e8ecf0}
+.progress-seg{height:4px;flex:1;border-radius:99px;background:#e8ecf0;cursor:pointer;transition:all 0.4s ease;position:relative;overflow:hidden}
+.progress-seg.completed{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.progress-seg.active{background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 8px rgba(34,197,94,0.4)}
+.progress-seg.active::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);animation:shimmer 2s linear infinite;background-size:200% 100%}
+
+/* Screen container */
+.screen{position:absolute;inset:0;top:92px;bottom:56px;overflow-y:auto;overflow-x:hidden;opacity:0;transform:translateX(60px);pointer-events:none;transition:opacity 0.5s ease,transform 0.5s ease}
+.screen.active{opacity:1;transform:translateX(0);pointer-events:all}
+.screen.exit-left{opacity:0;transform:translateX(-60px)}
+
+/* Animations */
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes float-d{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes pulse-glow{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+@keyframes scan-pulse{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.8);opacity:0}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes slideInUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes countUp{from{opacity:.5}to{opacity:1}}
+@keyframes popIn{0%{opacity:0;transform:scale(0.8)}100%{opacity:1;transform:scale(1)}}
+@keyframes checkmark{0%{stroke-dashoffset:24}100%{stroke-dashoffset:0}}
+@keyframes flowDot{0%{offset-distance:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+@keyframes pipelineGlow{0%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{box-shadow:0 0 20px 4px rgba(34,197,94,0.2)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+@keyframes highlightPulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.3)}50%{box-shadow:0 0 0 8px rgba(34,197,94,0)}}
+@keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(-60px) rotate(720deg);opacity:0}}
+
+.float{animation:float 4s ease-in-out infinite}
+.float-d1{animation:float-d 5s ease-in-out 0.5s infinite}
+.float-d2{animation:float 4.5s ease-in-out 1s infinite}
+.float-d3{animation:float-d 5.5s ease-in-out 1.5s infinite}
+.pulse-glow{animation:pulse-glow 3s ease-in-out infinite}
+.scan-pulse{animation:scan-pulse 2.5s ease-out infinite}
+
+.card{background:#fff;border-radius:16px;border:1px solid #e8ecf0;box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:all 0.4s cubic-bezier(0.4,0,0.2,1)}
+.card:hover{transform:translateY(-4px);box-shadow:0 20px 40px -12px rgba(0,0,0,0.1);border-color:#bbf7d1}
+.card-static{background:#fff;border-radius:16px;border:1px solid #e8ecf0;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+
+.btn-gold{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:600;border-radius:12px;padding:10px 24px;box-shadow:0 4px 12px rgba(245,158,11,0.3);transition:all 0.3s}
+.btn-gold:hover{box-shadow:0 8px 20px rgba(245,158,11,0.4);transform:translateY(-2px)}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:600;border-radius:12px;padding:10px 24px;box-shadow:0 4px 12px rgba(22,163,74,0.3);transition:all 0.3s}
+.btn-green:hover{box-shadow:0 8px 20px rgba(22,163,74,0.4);transform:translateY(-2px)}
+
+.noise-bg{position:relative;overflow:hidden}
+.noise-bg::before{content:'';position:absolute;inset:0;opacity:0.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.noise-bg>*{position:relative;z-index:1}
+
+.hero-gradient{background:radial-gradient(ellipse at 20% 50%,rgba(22,163,74,0.12) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(34,197,94,0.08) 0%,transparent 40%),linear-gradient(180deg,#fff 0%,#f0fdf4 100%)}
+
+.channel-badge{font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;white-space:nowrap}
+
+/* Pipeline steps */
+.pipeline-step{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0.3;transition:all 0.5s ease}
+.pipeline-step.active{opacity:1}
+.pipeline-step.done .step-circle{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff}
+.pipeline-step .step-circle{width:40px;height:40px;border-radius:50%;border:2px solid #e8ecf0;display:flex;align-items:center;justify-content:center;transition:all 0.5s ease}
+.pipeline-connector{height:2px;flex:1;background:#e8ecf0;transition:background 0.5s ease;min-width:20px}
+.pipeline-connector.done{background:linear-gradient(90deg,#22c55e,#4ade80)}
+
+/* Tabs */
+.tab-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;color:#64748b;cursor:pointer;transition:all 0.3s}
+.tab-btn.active{background:linear-gradient(135deg,#166534,#15803d);color:#fff;box-shadow:0 4px 12px rgba(22,101,52,0.3)}
+
+/* Document highlight */
+.doc-highlight{animation:highlightPulse 2s infinite}
+
+/* Tree */
+.tree-line{border-left:2px solid #e5e7eb;margin-left:12px;padding-left:16px}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+
+/* Overlay */
+.demo-overlay{position:fixed;inset:0;z-index:200;background:rgba(5,46,22,0.92);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.6s ease}
+.demo-overlay.show{opacity:1;pointer-events:all}
+</style>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+
+<!-- ═══ NAVIGATION SHELL ═══ -->
+<nav class="demo-nav">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex items-center justify-between h-14">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-md shadow-brand-500/20">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        <span class="text-lg font-bold tracking-tight">Cloud<span class="text-brand-600">CFO</span></span>
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-semibold text-gray-800" id="screenTitle">Welcome</p>
+        <p class="text-[10px] text-gray-400 uppercase tracking-wider">Interactive Demo</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-medium text-gray-500" id="stepIndicator">Step 1 of 6</span>
+        <button onclick="toggleAutoPlay()" id="autoPlayBtn" class="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition" title="Auto-play">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </button>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div class="flex gap-1.5 pb-2" id="progressBar">
+      <div class="progress-seg active" onclick="goToScreen(0)" title="Landing Page"></div>
+      <div class="progress-seg" onclick="goToScreen(1)" title="Connect Accounts"></div>
+      <div class="progress-seg" onclick="goToScreen(2)" title="Auto-Discovery"></div>
+      <div class="progress-seg" onclick="goToScreen(3)" title="Extraction"></div>
+      <div class="progress-seg" onclick="goToScreen(4)" title="Accounting"></div>
+      <div class="progress-seg" onclick="goToScreen(5)" title="ESG"></div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<div class="fixed bottom-0 left-0 right-0 z-100 bg-white/95 backdrop-blur border-t border-gray-100" style="z-index:100">
+  <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+    <button onclick="prevScreen()" id="btnPrev" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 hover:text-brand-700 rounded-lg transition opacity-0" disabled>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <div class="flex items-center gap-1.5">
+      <span class="text-[10px] text-gray-400">Made with 🇲🇦 in Morocco</span>
+      <span class="text-gray-300">·</span>
+      <span class="text-[10px] text-gray-400">Powered by <span class="text-brand-600 font-medium">MerlinData.ai</span></span>
+    </div>
+    <button onclick="nextScreen()" id="btnNext" class="btn-gold text-sm flex items-center gap-2">
+      Next
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 1: LANDING PAGE (Condensed)                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen0">
+  <div class="h-full hero-gradient noise-bg flex items-center">
+    <div class="max-w-7xl mx-auto px-6 w-full">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <!-- Left: Copy -->
+        <div style="animation:slideInUp 0.7s ease-out both">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-100 text-brand-700 rounded-full text-xs font-semibold mb-5 tracking-wide uppercase">
+            <span class="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse"></span>
+            AI-Powered Bookkeeping & Carbon Accounting
+          </div>
+          <h1 class="font-heading text-4xl lg:text-5xl font-bold text-gray-900 mb-5 leading-tight">
+            Your finances,<br>
+            <span class="bg-gradient-to-r from-brand-600 to-brand-800 bg-clip-text text-transparent">captured automatically.</span>
+          </h1>
+          <p class="text-base text-gray-600 leading-relaxed mb-6 max-w-md">
+            CloudCFO captures every receipt, invoice, and transaction across your email, cloud storage, messaging apps, phone notifications, and bank feeds — then turns them into verified books and carbon reports. <strong class="text-gray-800">Automatically.</strong>
+          </p>
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-500 mb-8">
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg><strong class="text-gray-700">&lt;500ms</strong> processing</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><strong class="text-gray-700">99.5%</strong> accuracy</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>SOC 2</span>
+            <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>Dual intelligence</span>
+          </div>
+          <button onclick="nextScreen()" class="btn-gold text-sm inline-flex items-center gap-2 px-8 py-3.5">
+            See It In Action
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </div>
+        <!-- Right: Document Flow SVG Illustration -->
+        <div class="relative hidden lg:block" style="animation:slideInUp 0.7s ease-out 0.2s both;height:400px">
+          <!-- Sources (left) -->
+          <div class="absolute left-0 top-4 float" style="animation-delay:0s"><div class="w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center border border-gray-100"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M2 6l10 7 10-7" stroke="#EA4335" stroke-width="1.5" stroke-linecap="round"/><rect x="2" y="4" width="20" height="16" rx="3" stroke="#4285F4" stroke-width="1.5"/></svg></div><span class="block text-center text-[9px] text-gray-500 mt-1 font-medium">Gmail</span></div>
+          <div class="absolute left-0 top-[120px] float-d1"><div class="w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center border border-gray-100"><svg class="w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.77.46 3.43 1.27 4.88L2 22l5.12-1.27A9.96 9.96 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="block text-center text-[9px] text-gray-500 mt-1 font-medium">WhatsApp</span></div>
+          <div class="absolute left-4 top-[230px] float-d2"><div class="w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center border border-gray-100 relative"><svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-[7px] text-white flex items-center justify-center font-bold">3</span></div><span class="block text-center text-[9px] text-gray-500 mt-1 font-medium">Notifications</span></div>
+          <div class="absolute left-16 top-[330px] float-d3"><div class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center border border-gray-100"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><polygon points="12,2 2,18 6,22 16,6" stroke="#0066DA" stroke-width="1.5" fill="none"/><polygon points="12,2 22,18 18,22 8,6" stroke="#00AC47" stroke-width="1.5" fill="none"/><line x1="2" y1="18" x2="22" y2="18" stroke="#EA4335" stroke-width="1.5"/></svg></div><span class="block text-center text-[9px] text-gray-500 mt-1 font-medium">Drive</span></div>
+          <div class="absolute left-24 top-0 float-d2"><div class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center border border-gray-100"><svg class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none"><path d="M22 3L2 11l7 3 3 7 10-18z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="block text-center text-[9px] text-gray-500 mt-1 font-medium">Telegram</span></div>
+          <div class="absolute left-28 bottom-4 float"><div class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center border border-gray-100"><svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div><span class="block text-center text-[9px] text-gray-500 mt-1 font-medium">Bank</span></div>
+
+          <!-- Central Hub -->
+          <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+            <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 flex flex-col items-center justify-center shadow-2xl shadow-brand-700/30 relative">
+              <div class="absolute inset-0 rounded-2xl scan-pulse bg-brand-500/20"></div>
+              <svg class="w-7 h-7 text-white mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+              <span class="text-white text-[9px] font-bold tracking-wider">CloudCFO</span>
+              <span class="text-brand-200 text-[7px]">AI Engine</span>
+            </div>
+          </div>
+
+          <!-- Output mini-dashboards (right) -->
+          <div class="absolute right-0 top-8 float-d1">
+            <div class="w-44 bg-white rounded-xl shadow-xl border border-gray-100 p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-5 h-5 bg-brand-100 rounded flex items-center justify-center"><svg class="w-3 h-3 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></div>
+                <span class="text-[10px] font-semibold text-gray-800">Accounting</span>
+              </div>
+              <div class="space-y-1.5">
+                <div class="flex justify-between text-[9px]"><span class="text-gray-500">Revenue</span><span class="font-semibold text-brand-600">$847,250</span></div>
+                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full" style="width:72%"></div></div>
+                <div class="flex justify-between text-[9px]"><span class="text-gray-500">Net Profit</span><span class="font-semibold text-brand-600">$324,070</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="absolute right-4 bottom-12 float-d2">
+            <div class="w-44 bg-white rounded-xl shadow-xl border border-gray-100 p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-5 h-5 bg-emerald-100 rounded flex items-center justify-center"><svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg></div>
+                <span class="text-[10px] font-semibold text-gray-800">ESG & Carbon</span>
+              </div>
+              <div class="space-y-1.5">
+                <div class="flex justify-between text-[9px]"><span class="text-gray-500">Emissions</span><span class="font-semibold text-emerald-600">142.8 tCO₂e</span></div>
+                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" style="width:38%"></div></div>
+                <div class="flex justify-between text-[9px]"><span class="text-gray-500">ESG Score</span><span class="font-semibold text-emerald-600">74/100</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flow lines (SVG) -->
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet" style="opacity:0.3">
+            <defs>
+              <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22c55e" stop-opacity="0.2"/><stop offset="50%" stop-color="#22c55e" stop-opacity="0.8"/><stop offset="100%" stop-color="#22c55e" stop-opacity="0.2"/></linearGradient>
+            </defs>
+            <path d="M80,40 Q180,40 230,190" fill="none" stroke="url(#flowGrad)" stroke-width="1.5" stroke-dasharray="4,6"/>
+            <path d="M70,140 Q170,140 230,190" fill="none" stroke="url(#flowGrad)" stroke-width="1.5" stroke-dasharray="4,6"/>
+            <path d="M80,250 Q180,220 230,200" fill="none" stroke="url(#flowGrad)" stroke-width="1.5" stroke-dasharray="4,6"/>
+            <path d="M270,190 Q340,100 400,80" fill="none" stroke="url(#flowGrad)" stroke-width="1.5" stroke-dasharray="4,6"/>
+            <path d="M270,200 Q340,280 400,300" fill="none" stroke="url(#flowGrad)" stroke-width="1.5" stroke-dasharray="4,6"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 2: ONBOARDING / ACCOUNT CONNECTION               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen1">
+  <div class="h-full bg-gradient-to-b from-brand-50 to-white flex flex-col items-center px-6 py-8 overflow-y-auto">
+    <div class="text-center mb-8 max-w-lg">
+      <h2 class="font-heading text-3xl font-bold text-gray-900 mb-3">Connect your accounts in seconds</h2>
+      <p class="text-gray-500 text-sm">CloudCFO captures documents from 4 paradigms. Enable them all for zero-touch coverage.</p>
+      <div class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
+        <span class="text-sm font-medium text-gray-600" id="connCounter">0 of 4 paradigms connected</span>
+        <div class="flex gap-1" id="connDots">
+          <span class="w-2 h-2 rounded-full bg-gray-200" id="dot0"></span>
+          <span class="w-2 h-2 rounded-full bg-gray-200" id="dot1"></span>
+          <span class="w-2 h-2 rounded-full bg-gray-200" id="dot2"></span>
+          <span class="w-2 h-2 rounded-full bg-gray-200" id="dot3"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 max-w-4xl w-full">
+      <!-- Card 1: Auto-Discovery -->
+      <div class="card p-5 transition-all" id="paradigm0">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Auto-Discovery</h3>
+            <p class="text-xs text-gray-500">We scan your email and cloud storage continuously</p>
+          </div>
+        </div>
+        <div class="space-y-2.5" id="autoDiscBtns">
+          <button onclick="connectParadigm(0,'google',this)" class="w-full flex items-center gap-3 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition text-sm font-medium text-gray-700">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Connect with Google
+            <span class="ml-auto text-[10px] text-gray-400">Gmail + Drive</span>
+          </button>
+          <button onclick="connectParadigm(0,'microsoft',this)" class="w-full flex items-center gap-3 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition text-sm font-medium text-gray-700">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="13" y="1" width="10" height="10" fill="#7FBA00"/><rect x="1" y="13" width="10" height="10" fill="#00A4EF"/><rect x="13" y="13" width="10" height="10" fill="#FFB900"/></svg>
+            Connect with Microsoft
+            <span class="ml-auto text-[10px] text-gray-400">Outlook + OneDrive</span>
+          </button>
+        </div>
+        <div class="hidden mt-3 flex items-center gap-2 text-xs text-brand-600 font-medium" id="autoDiscDone">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          3 inboxes synced, 2 drives connected
+        </div>
+      </div>
+
+      <!-- Card 2: Notification Capture -->
+      <div class="card p-5 transition-all" id="paradigm1">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Notification Capture</h3>
+            <p class="text-xs text-gray-500">Capture receipts from Uber, Glovo, airlines & more</p>
+          </div>
+        </div>
+        <button onclick="connectParadigm(1,'notif',this)" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition text-sm font-semibold" id="notifBtn">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          Install CloudCFO Mobile
+        </button>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <span class="px-2 py-1 bg-gray-100 rounded-lg text-[10px] text-gray-500 font-medium">Uber</span>
+          <span class="px-2 py-1 bg-gray-100 rounded-lg text-[10px] text-gray-500 font-medium">Glovo</span>
+          <span class="px-2 py-1 bg-gray-100 rounded-lg text-[10px] text-gray-500 font-medium">Bolt</span>
+          <span class="px-2 py-1 bg-gray-100 rounded-lg text-[10px] text-gray-500 font-medium">Airlines</span>
+          <span class="px-2 py-1 bg-gray-100 rounded-lg text-[10px] text-gray-500 font-medium">Hotels</span>
+          <span class="px-2 py-1 bg-gray-100 rounded-lg text-[10px] text-gray-500 font-medium">+12 more</span>
+        </div>
+        <div class="hidden mt-3 flex items-center gap-2 text-xs text-brand-600 font-medium" id="notifDone">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          12 notification sources detected
+        </div>
+      </div>
+
+      <!-- Card 3: Forwarding -->
+      <div class="card p-5 transition-all" id="paradigm2">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Forwarding</h3>
+            <p class="text-xs text-gray-500">Forward documents from WhatsApp, Telegram, or email</p>
+          </div>
+        </div>
+        <div class="space-y-2" id="fwdBtns">
+          <button onclick="connectParadigm(2,'whatsapp',this)" class="w-full flex items-center gap-3 px-4 py-2 bg-white border-2 border-gray-200 rounded-xl hover:border-green-300 transition text-sm font-medium text-gray-700">
+            <svg class="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.77.46 3.43 1.27 4.88L2 22l5.12-1.27A9.96 9.96 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+            Add CloudCFO Bot
+            <span class="ml-auto text-[10px] text-gray-400">WhatsApp</span>
+          </button>
+          <button onclick="connectParadigm(2,'telegram',this)" class="w-full flex items-center gap-3 px-4 py-2 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-300 transition text-sm font-medium text-gray-700">
+            <svg class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="currentColor"><path d="M22 3L2 11l7 3 3 7 10-18z"/></svg>
+            Start @CloudCFOBot
+            <span class="ml-auto text-[10px] text-gray-400">Telegram</span>
+          </button>
+          <div class="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8"/></svg>
+            <span class="font-mono text-gray-700">docs@cloudcfo.ai</span>
+            <button class="ml-auto text-brand-600 font-medium hover:text-brand-700" onclick="this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+          </div>
+        </div>
+        <div class="hidden mt-3 flex items-center gap-2 text-xs text-brand-600 font-medium" id="fwdDone">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          3 forwarding channels active
+        </div>
+      </div>
+
+      <!-- Card 4: Bulk Upload -->
+      <div class="card p-5 transition-all" id="paradigm3">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
+            <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Bulk Upload</h3>
+            <p class="text-xs text-gray-500">Drag & drop files or connect Dropbox/Box</p>
+          </div>
+        </div>
+        <div onclick="connectParadigm(3,'upload',this)" id="uploadZone" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-brand-400 hover:bg-brand-50/30 transition cursor-pointer">
+          <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <p class="text-sm text-gray-500">Drag files here or <span class="text-brand-600 font-medium">click to browse</span></p>
+          <p class="text-[10px] text-gray-400 mt-1">PDF, JPG, PNG, XLSX, CSV</p>
+        </div>
+        <div class="hidden mt-3 flex items-center gap-2 text-xs text-brand-600 font-medium" id="uploadDone">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          3 files uploaded successfully
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <button onclick="nextScreen()" class="text-sm text-gray-400 hover:text-gray-600 transition">Skip for now →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 3: AUTO-DISCOVERY FEED                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen2">
+  <div class="max-w-7xl mx-auto px-6 py-6">
+    <div class="text-center mb-6">
+      <h2 class="font-heading text-2xl font-bold text-gray-900 mb-2">Documents discovered automatically</h2>
+      <p class="text-sm text-gray-500">CloudCFO is scanning your connected accounts. Watch as documents appear.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-5 gap-6">
+      <!-- Left: Live Feed (3 cols) -->
+      <div class="lg:col-span-3">
+        <div class="card-static overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 bg-brand-500 rounded-full animate-pulse"></span>
+              <span class="text-sm font-semibold text-gray-800">Live Discovery Feed</span>
+            </div>
+            <span class="text-xs text-gray-400" id="feedStatus">Scanning...</span>
+          </div>
+          <div class="p-3 space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto" id="discoveryFeed">
+            <!-- Documents injected by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Summary (2 cols) -->
+      <div class="lg:col-span-2 space-y-4">
+        <!-- Discovery Summary -->
+        <div class="card-static p-4">
+          <h3 class="font-semibold text-gray-900 text-sm mb-3">Discovery Summary</h3>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="text-center p-3 bg-brand-50 rounded-xl">
+              <p class="text-2xl font-bold text-brand-700" id="docCount">0</p>
+              <p class="text-[10px] text-gray-500 uppercase tracking-wider">Documents</p>
+            </div>
+            <div class="text-center p-3 bg-brand-50 rounded-xl">
+              <p class="text-2xl font-bold text-brand-700" id="totalValue">$0</p>
+              <p class="text-[10px] text-gray-500 uppercase tracking-wider">Total Value</p>
+            </div>
+          </div>
+          <div class="mb-4">
+            <p class="text-xs text-gray-500 mb-2 font-medium">By Source</p>
+            <canvas id="sourceChart" height="140"></canvas>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-2 font-medium">By Type</p>
+            <div class="space-y-1.5" id="typeBreakdown">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-xs text-gray-500">Avg. AI Confidence</span>
+            <span class="text-sm font-bold text-brand-600" id="avgConfidence">—</span>
+          </div>
+        </div>
+
+        <!-- Processing Queue -->
+        <div class="card-static p-4">
+          <h3 class="font-semibold text-gray-900 text-sm mb-3">AI Processing Queue</h3>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-1000" id="queueBar" style="width:0%"></div>
+            </div>
+            <span class="text-xs font-mono text-gray-500" id="queueText">0 ready</span>
+          </div>
+          <p class="text-xs text-gray-500 mb-3">Estimated processing: <strong class="text-gray-700">&lt; 5 seconds total</strong></p>
+          <button onclick="nextScreen()" class="btn-gold w-full text-sm flex items-center justify-center gap-2" id="processAllBtn" style="opacity:0.5;pointer-events:none">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Process All
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 4: INTELLIGENT EXTRACTION ENGINE                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen3">
+  <div class="max-w-7xl mx-auto px-6 py-4">
+    <div class="text-center mb-4">
+      <h2 class="font-heading text-2xl font-bold text-gray-900 mb-1">Intelligent Extraction — Dual Output in &lt;500ms</h2>
+      <p class="text-xs text-gray-500">Watch the AI pipeline extract financial AND carbon data simultaneously</p>
+    </div>
+
+    <!-- Pipeline Progress -->
+    <div class="flex items-center gap-1 max-w-3xl mx-auto mb-5 px-4" id="pipeline">
+      <div class="pipeline-step" id="pipe0" data-label="Intake">
+        <div class="step-circle"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+        <span class="text-[10px] text-gray-500 font-medium">Intake</span>
+      </div>
+      <div class="pipeline-connector" id="conn0"></div>
+      <div class="pipeline-step" id="pipe1" data-label="OCR">
+        <div class="step-circle"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></div>
+        <span class="text-[10px] text-gray-500 font-medium">OCR</span>
+      </div>
+      <div class="pipeline-connector" id="conn1"></div>
+      <div class="pipeline-step" id="pipe2" data-label="Classify">
+        <div class="step-circle"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg></div>
+        <span class="text-[10px] text-gray-500 font-medium">Classify</span>
+      </div>
+      <div class="pipeline-connector" id="conn2"></div>
+      <div class="pipeline-step" id="pipe3" data-label="Extract">
+        <div class="step-circle"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg></div>
+        <span class="text-[10px] text-gray-500 font-medium">Dual Extract</span>
+      </div>
+      <div class="pipeline-connector" id="conn3"></div>
+      <div class="pipeline-step" id="pipe4" data-label="Verify">
+        <div class="step-circle"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <span class="text-[10px] text-gray-500 font-medium">Verify</span>
+      </div>
+    </div>
+
+    <!-- Split View -->
+    <div class="grid lg:grid-cols-2 gap-5">
+      <!-- Left: Document Preview -->
+      <div class="card-static overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+          <span class="text-xs font-semibold text-gray-700">Document Preview</span>
+          <span class="channel-badge bg-red-100 text-red-700">Gmail</span>
+        </div>
+        <div class="p-5" id="docPreview">
+          <!-- Simulated Invoice -->
+          <div class="border border-gray-200 rounded-lg p-5 bg-white relative" id="invoiceDoc">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mb-2"><span class="text-white font-bold text-sm">TS</span></div>
+                <p class="font-bold text-sm text-gray-900">TechSupply Ltd</p>
+                <p class="text-[10px] text-gray-500">123 Silicon Valley Blvd, CA</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-lg text-gray-900">INVOICE</p>
+                <p class="text-xs text-gray-500">#2847</p>
+                <p class="text-xs text-gray-500">Jan 15, 2026</p>
+              </div>
+            </div>
+            <div class="mb-3">
+              <p class="text-[10px] text-gray-400 uppercase mb-1">Bill To</p>
+              <p class="text-xs font-medium text-gray-700">Your Company Name</p>
+            </div>
+            <table class="w-full text-xs mb-3">
+              <thead><tr class="border-b border-gray-200"><th class="text-left py-1.5 text-gray-500 font-medium">Item</th><th class="text-center py-1.5 text-gray-500 font-medium">Qty</th><th class="text-right py-1.5 text-gray-500 font-medium">Price</th><th class="text-right py-1.5 text-gray-500 font-medium">Total</th></tr></thead>
+              <tbody>
+                <tr class="border-b border-gray-100 ext-highlight" id="hl1"><td class="py-1.5 text-gray-700">Cloud Server Hosting (AWS)</td><td class="text-center text-gray-600">1</td><td class="text-right text-gray-600">$2,500</td><td class="text-right font-medium text-gray-800">$2,500</td></tr>
+                <tr class="border-b border-gray-100 ext-highlight" id="hl2"><td class="py-1.5 text-gray-700">Software Licenses (Annual)</td><td class="text-center text-gray-600">5</td><td class="text-right text-gray-600">$250</td><td class="text-right font-medium text-gray-800">$1,250</td></tr>
+                <tr class="border-b border-gray-100 ext-highlight" id="hl3"><td class="py-1.5 text-gray-700">IT Support Hours</td><td class="text-center text-gray-600">12</td><td class="text-right text-gray-600">$50</td><td class="text-right font-medium text-gray-800">$600</td></tr>
+              </tbody>
+            </table>
+            <div class="text-right text-xs space-y-1">
+              <div class="flex justify-end gap-4"><span class="text-gray-500">Subtotal:</span><span class="font-medium" id="hlSubtotal">$4,350.00</span></div>
+              <div class="flex justify-end gap-4"><span class="text-gray-500">Tax (20%):</span><span class="font-medium" id="hlTax">$870.00</span></div>
+              <div class="flex justify-end gap-4 pt-1 border-t border-gray-200"><span class="font-bold text-gray-800">Total:</span><span class="font-bold text-brand-700 text-sm" id="hlTotal">$5,220.00</span></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-3">Payment Terms: Net 30</p>
+            <!-- Highlight overlays appear via JS -->
+            <div class="absolute inset-0 pointer-events-none" id="extractionOverlay"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Extraction Results -->
+      <div class="card-static overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
+          <div class="flex gap-1">
+            <button class="tab-btn active text-xs" onclick="switchExtTab('financial')" id="tabFinancial">Financial Data</button>
+            <button class="tab-btn text-xs" onclick="switchExtTab('carbon')" id="tabCarbon">Carbon / ESG Data</button>
+          </div>
+          <span class="ml-auto text-xs text-gray-400" id="extractionTimer">—</span>
+        </div>
+        <div class="p-4 max-h-[calc(100vh-340px)] overflow-y-auto">
+          <!-- Financial Tab -->
+          <div id="extFinancial">
+            <div class="space-y-2" id="financialFields">
+              <!-- Fields injected by JS -->
+            </div>
+          </div>
+          <!-- Carbon Tab -->
+          <div id="extCarbon" class="hidden">
+            <div class="space-y-2" id="carbonFields">
+              <!-- Fields injected by JS -->
+            </div>
+          </div>
+        </div>
+        <!-- Bottom Metrics -->
+        <div class="px-4 py-3 border-t border-gray-100 bg-gray-50 grid grid-cols-4 gap-3">
+          <div class="text-center">
+            <p class="text-lg font-bold text-brand-700" id="procTime">—</p>
+            <p class="text-[10px] text-gray-500">Processing Time</p>
+          </div>
+          <div class="text-center">
+            <p class="text-lg font-bold text-brand-700" id="fieldsCount">—</p>
+            <p class="text-[10px] text-gray-500">Fields Extracted</p>
+          </div>
+          <div class="text-center">
+            <p class="text-lg font-bold text-brand-700" id="confScore">—</p>
+            <p class="text-[10px] text-gray-500">AI Confidence</p>
+          </div>
+          <div class="text-center">
+            <p class="text-lg font-bold text-brand-700" id="verifyStatus">—</p>
+            <p class="text-[10px] text-gray-500">Verification</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 5: ACCOUNTING & TAX DASHBOARD                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen4">
+  <div class="max-w-[1400px] mx-auto px-6 py-4 overflow-y-auto" style="max-height:calc(100vh - 148px)">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+          <span>Dashboard</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span class="text-gray-800 font-medium">Accounting & Tax</span>
+        </div>
+        <h2 class="font-heading text-xl font-bold text-gray-900">Accounting & Tax Dashboard</h2>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden text-xs">
+          <button class="px-3 py-1.5 text-gray-500 hover:bg-brand-50">Month</button>
+          <button class="px-3 py-1.5 bg-brand-50 text-brand-700 font-semibold">Quarter</button>
+          <button class="px-3 py-1.5 text-gray-500 hover:bg-brand-50">Year</button>
+        </div>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 hover:border-brand-300 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification banner -->
+    <div class="mb-4 flex items-center gap-3 px-4 py-2.5 bg-brand-50 border border-brand-200 rounded-xl" style="animation:slideInUp 0.5s ease-out both">
+      <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span class="text-sm text-brand-700"><strong>10 documents</strong> processed with 0 exceptions</span>
+      <span class="ml-auto text-xs text-brand-600 font-medium">Just now</span>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-4 gap-4 mb-5">
+      <div class="card-static p-4 border-l-4 border-brand-500">
+        <p class="text-xs text-gray-500 mb-1">Total Revenue</p>
+        <p class="text-xl font-semibold text-gray-900 acct-kpi" data-target="847250" data-prefix="$" data-format="comma">$0</p>
+        <div class="flex items-center gap-1 mt-1"><span class="text-xs font-medium text-brand-600">↑ 12.3%</span><span class="text-[10px] text-gray-400">vs last quarter</span></div>
+      </div>
+      <div class="card-static p-4 border-l-4 border-rose-400">
+        <p class="text-xs text-gray-500 mb-1">Total Expenses</p>
+        <p class="text-xl font-semibold text-gray-900 acct-kpi" data-target="523890" data-prefix="$" data-format="comma">$0</p>
+        <div class="flex items-center gap-1 mt-1"><span class="text-xs font-medium text-rose-500">↑ 8.7%</span><span class="text-[10px] text-gray-400">vs last quarter</span></div>
+      </div>
+      <div class="card-static p-4 border-l-4 border-emerald-500">
+        <p class="text-xs text-gray-500 mb-1">Net Profit</p>
+        <p class="text-xl font-semibold text-brand-600 acct-kpi" data-target="323360" data-prefix="$" data-format="comma">$0</p>
+        <div class="flex items-center gap-1 mt-1"><span class="px-2 py-0.5 bg-brand-100 text-brand-700 text-[10px] font-semibold rounded-full">38.2% margin</span><span class="text-xs text-brand-600 ml-1">↑ 18.2%</span></div>
+      </div>
+      <div class="card-static p-4 border-l-4 border-amber-400">
+        <p class="text-xs text-gray-500 mb-1">Tax Liability</p>
+        <p class="text-xl font-semibold text-gray-900 acct-kpi" data-target="84725" data-prefix="$" data-format="comma">$0</p>
+        <div class="flex items-center gap-1 mt-1"><span class="text-[10px] text-gray-400">Effective rate:</span><span class="text-xs font-medium text-gray-700">26.2%</span></div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-12 gap-4 mb-5">
+      <div class="col-span-7 card-static p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm text-gray-900">Revenue vs Expenses</h3>
+          <span class="text-[10px] text-gray-400">Last 6 months</span>
+        </div>
+        <canvas id="acctLineChart" height="180"></canvas>
+      </div>
+      <div class="col-span-5 card-static p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm text-gray-900">Expense Breakdown</h3>
+        </div>
+        <canvas id="acctDoughnut" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart of Accounts + Transactions -->
+    <div class="grid grid-cols-12 gap-4 mb-5">
+      <!-- Chart of Accounts -->
+      <div class="col-span-4 card-static">
+        <div class="px-4 py-3 border-b border-gray-100">
+          <h3 class="font-semibold text-sm text-gray-900">Chart of Accounts</h3>
+        </div>
+        <div class="p-3 text-xs space-y-1 max-h-64 overflow-y-auto">
+          <div class="flex items-center justify-between p-2 bg-brand-50 rounded-lg"><div class="flex items-center gap-2"><span class="w-2 h-2 bg-brand-500 rounded-sm"></span><span class="font-medium text-gray-800">Assets</span></div><span class="font-semibold text-gray-700">$1,245,680</span></div>
+          <div class="tree-line ml-3 space-y-1">
+            <div class="flex justify-between p-1.5"><span class="text-gray-600">Cash & Bank</span><span class="font-medium text-gray-700">$456,230</span></div>
+            <div class="flex justify-between p-1.5"><span class="text-gray-600">Accounts Receivable</span><span class="font-medium text-gray-700">$312,450</span></div>
+            <div class="flex justify-between p-1.5"><span class="text-gray-600">Fixed Assets</span><span class="font-medium text-gray-700">$477,000</span></div>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-rose-50 rounded-lg"><div class="flex items-center gap-2"><span class="w-2 h-2 bg-rose-500 rounded-sm"></span><span class="font-medium text-gray-800">Liabilities</span></div><span class="font-semibold text-gray-700">$421,320</span></div>
+          <div class="flex items-center justify-between p-2 bg-blue-50 rounded-lg"><div class="flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 rounded-sm"></span><span class="font-medium text-gray-800">Equity</span></div><span class="font-semibold text-gray-700">$824,360</span></div>
+          <div class="flex items-center justify-between p-2 bg-brand-50 rounded-lg"><div class="flex items-center gap-2"><span class="w-2 h-2 bg-brand-500 rounded-sm"></span><span class="font-medium text-gray-800">Revenue</span></div><span class="font-semibold text-gray-700">$847,250</span></div>
+          <div class="flex items-center justify-between p-2 bg-amber-50 rounded-lg"><div class="flex items-center gap-2"><span class="w-2 h-2 bg-amber-500 rounded-sm"></span><span class="font-medium text-gray-800">Expenses</span></div><span class="font-semibold text-gray-700">$523,890</span></div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="col-span-8 card-static">
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="font-semibold text-sm text-gray-900">Recent Transactions</h3>
+          <span class="px-2 py-0.5 bg-brand-100 text-brand-700 text-[10px] font-semibold rounded-full">10 new</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead><tr class="border-b border-gray-100 text-gray-500"><th class="text-left px-4 py-2 font-medium">Date</th><th class="text-left px-4 py-2 font-medium">Description</th><th class="text-left px-4 py-2 font-medium">Category</th><th class="text-left px-4 py-2 font-medium">Source</th><th class="text-right px-4 py-2 font-medium">Amount</th><th class="text-center px-4 py-2 font-medium">Status</th></tr></thead>
+            <tbody>
+              <tr class="border-b border-gray-50 doc-highlight" style="animation:highlightPulse 2s infinite">
+                <td class="px-4 py-2.5 text-gray-600">Jan 15</td>
+                <td class="px-4 py-2.5 font-medium text-gray-800">Invoice #2847 — TechSupply Ltd <span class="ml-1 px-1.5 py-0.5 bg-brand-100 text-brand-700 text-[9px] rounded-full font-semibold">NEW</span></td>
+                <td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">IT Infrastructure</span></td>
+                <td class="px-4 py-2.5"><span class="channel-badge bg-red-100 text-red-700">Gmail</span></td>
+                <td class="px-4 py-2.5 text-right font-semibold text-gray-800">$5,220.00</td>
+                <td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full text-[10px] font-medium">Verified</span></td>
+              </tr>
+              <tr class="border-b border-gray-50"><td class="px-4 py-2.5 text-gray-600">Jan 15</td><td class="px-4 py-2.5 font-medium text-gray-800">Q4 Expense Report</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[10px] font-medium">Operations</span></td><td class="px-4 py-2.5"><span class="channel-badge bg-blue-100 text-blue-700">Drive</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">$12,847.00</td><td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full text-[10px] font-medium">Verified</span></td></tr>
+              <tr class="border-b border-gray-50"><td class="px-4 py-2.5 text-gray-600">Jan 14</td><td class="px-4 py-2.5 font-medium text-gray-800">Cafe Maroc Receipt</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-[10px] font-medium">Meals</span></td><td class="px-4 py-2.5"><span class="channel-badge bg-green-100 text-green-700">WhatsApp</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">MAD 245</td><td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full text-[10px] font-medium">Verified</span></td></tr>
+              <tr class="border-b border-gray-50"><td class="px-4 py-2.5 text-gray-600">Jan 14</td><td class="px-4 py-2.5 font-medium text-gray-800">Uber Trip Receipt</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full text-[10px] font-medium">Transport</span></td><td class="px-4 py-2.5"><span class="channel-badge bg-amber-100 text-amber-700">Notif</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">$34.50</td><td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full text-[10px] font-medium">Verified</span></td></tr>
+              <tr class="border-b border-gray-50"><td class="px-4 py-2.5 text-gray-600">Jan 13</td><td class="px-4 py-2.5 font-medium text-gray-800">Utility Bill — Lydec</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full text-[10px] font-medium">Utilities</span></td><td class="px-4 py-2.5"><span class="channel-badge bg-red-100 text-red-700">Gmail</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">MAD 1,230</td><td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full text-[10px] font-medium">Verified</span></td></tr>
+              <tr><td class="px-4 py-2.5 text-gray-600">Jan 12</td><td class="px-4 py-2.5 font-medium text-gray-800">Office Supplies Co</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-[10px] font-medium">Office</span></td><td class="px-4 py-2.5"><span class="channel-badge bg-blue-100 text-blue-600">Telegram</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">$892.00</td><td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full text-[10px] font-medium">Verified</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tax & Reconciliation Row -->
+    <div class="grid grid-cols-2 gap-4 mb-5">
+      <div class="card-static p-4">
+        <h3 class="font-semibold text-sm text-gray-900 mb-3">Tax Optimization</h3>
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between p-2.5 bg-brand-50 rounded-lg"><div class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg><span class="text-gray-700">R&D Tax Credit Available</span></div><span class="font-semibold text-brand-700">$12,400</span></div>
+          <div class="flex items-center justify-between p-2.5 bg-amber-50 rounded-lg"><div class="flex items-center gap-2"><svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg><span class="text-gray-700">Missing Deductions Detected</span></div><span class="font-semibold text-amber-700">3 items</span></div>
+          <div class="flex items-center justify-between p-2.5 bg-green-50 rounded-lg"><div class="flex items-center gap-2"><svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg><span class="text-gray-700">Potential Annual Savings</span></div><span class="font-semibold text-green-700">$18,650</span></div>
+        </div>
+      </div>
+      <div class="card-static p-4">
+        <h3 class="font-semibold text-sm text-gray-900 mb-3">Bank Reconciliation</h3>
+        <div class="flex items-center gap-3 mb-3">
+          <div class="flex-1"><div class="flex justify-between text-xs mb-1"><span class="text-gray-500">Reconciled</span><span class="font-semibold text-brand-600">94%</span></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full" style="width:94%"></div></div></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="p-2 bg-brand-50 rounded-lg"><p class="font-bold text-brand-700">847</p><p class="text-[10px] text-gray-500">Matched</p></div>
+          <div class="p-2 bg-amber-50 rounded-lg"><p class="font-bold text-amber-700">38</p><p class="text-[10px] text-gray-500">Pending</p></div>
+          <div class="p-2 bg-rose-50 rounded-lg"><p class="font-bold text-rose-700">12</p><p class="text-[10px] text-gray-500">Exceptions</p></div>
+        </div>
+        <div class="mt-3 flex items-center gap-2 text-[10px] text-gray-500">
+          <svg class="w-3.5 h-3.5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          AI auto-verified 99.5% of transactions this month
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA to ESG -->
+    <div class="text-center pb-4">
+      <button onclick="nextScreen()" class="btn-gold text-sm inline-flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+        View ESG Impact →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 6: ESG & SUSTAINABILITY DASHBOARD                -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen5">
+  <div class="max-w-[1400px] mx-auto px-6 py-4 overflow-y-auto" style="max-height:calc(100vh - 148px)">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+          <span>Dashboard</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span class="text-gray-800 font-medium">ESG & Sustainability</span>
+        </div>
+        <h2 class="font-heading text-xl font-bold text-gray-900">ESG & Sustainability Dashboard</h2>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+          GHG Protocol
+        </div>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 hover:border-brand-300 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download Report
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-4 gap-4 mb-5">
+      <div class="card-static p-4 border-l-4 border-emerald-500">
+        <p class="text-xs text-gray-500 mb-1">Total Emissions</p>
+        <p class="text-xl font-semibold text-gray-900 esg-kpi" data-target="142.8" data-suffix=" tCO₂e" data-decimals="1">0 tCO₂e</p>
+        <div class="flex items-center gap-1 mt-1"><span class="text-xs font-medium text-rose-500">↑ 5.2%</span><span class="text-[10px] text-gray-400">vs last quarter</span></div>
+      </div>
+      <div class="card-static p-4 border-l-4 border-blue-400">
+        <p class="text-xs text-gray-500 mb-1">Carbon Intensity</p>
+        <p class="text-xl font-semibold text-gray-900 esg-kpi" data-target="5929" data-prefix="$" data-suffix="/tCO₂e" data-format="comma">$0/tCO₂e</p>
+        <div class="flex items-center gap-1 mt-1"><span class="text-xs font-medium text-brand-600">↑ 8.1%</span><span class="text-[10px] text-gray-400">improvement</span></div>
+      </div>
+      <div class="card-static p-4 border-l-4 border-amber-400">
+        <p class="text-xs text-gray-500 mb-1">ESG Score</p>
+        <div class="flex items-center gap-3">
+          <p class="text-xl font-semibold text-gray-900">74<span class="text-sm text-gray-400">/100</span></p>
+          <canvas id="esgScoreGauge" width="50" height="50"></canvas>
+        </div>
+        <span class="px-2 py-0.5 bg-brand-100 text-brand-700 text-[10px] font-semibold rounded-full">Good</span>
+      </div>
+      <div class="card-static p-4 border-l-4 border-violet-400">
+        <p class="text-xs text-gray-500 mb-1">Offset Progress</p>
+        <p class="text-xl font-semibold text-gray-900">38%</p>
+        <div class="h-2 bg-gray-100 rounded-full overflow-hidden mt-2"><div class="h-full bg-gradient-to-r from-violet-400 to-violet-600 rounded-full" style="width:38%"></div></div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-12 gap-4 mb-5">
+      <div class="col-span-7 card-static p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm text-gray-900">Emissions by Scope</h3>
+          <span class="text-[10px] text-gray-400">Last 6 months</span>
+        </div>
+        <canvas id="esgScopeChart" height="180"></canvas>
+      </div>
+      <div class="col-span-5 card-static p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm text-gray-900">Emissions by Category</h3>
+        </div>
+        <canvas id="esgCategoryChart" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- Carbon Entries + Decarbonization -->
+    <div class="grid grid-cols-12 gap-4 mb-5">
+      <div class="col-span-7 card-static">
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="font-semibold text-sm text-gray-900">Recent Carbon Entries</h3>
+          <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-semibold rounded-full">Auto-tracked</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead><tr class="border-b border-gray-100 text-gray-500"><th class="text-left px-4 py-2 font-medium">Source</th><th class="text-left px-4 py-2 font-medium">Activity</th><th class="text-left px-4 py-2 font-medium">Scope</th><th class="text-right px-4 py-2 font-medium">Emissions</th><th class="text-center px-4 py-2 font-medium">Quality</th></tr></thead>
+            <tbody>
+              <tr class="border-b border-gray-50 doc-highlight" style="animation:highlightPulse 2s infinite">
+                <td class="px-4 py-2.5"><span class="font-medium text-gray-800">Invoice #2847</span> <span class="px-1.5 py-0.5 bg-brand-100 text-brand-700 text-[9px] rounded-full font-semibold">NEW</span></td>
+                <td class="px-4 py-2.5 text-gray-600">Cloud Server (1yr)</td>
+                <td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">Scope 3</span></td>
+                <td class="px-4 py-2.5 text-right font-semibold text-gray-800">0.276 tCO₂e</td>
+                <td class="px-4 py-2.5 text-center"><span class="text-amber-500">★★★★</span><span class="text-gray-300">★</span></td>
+              </tr>
+              <tr class="border-b border-gray-50"><td class="px-4 py-2.5 text-gray-700">Royal Air Maroc</td><td class="px-4 py-2.5 text-gray-600">Flight CMN→CDG</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">Scope 3</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">0.420 tCO₂e</td><td class="px-4 py-2.5 text-center"><span class="text-amber-500">★★★★</span><span class="text-gray-300">★</span></td></tr>
+              <tr class="border-b border-gray-50"><td class="px-4 py-2.5 text-gray-700">Lydec Utility</td><td class="px-4 py-2.5 text-gray-600">Electricity</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-medium">Scope 2</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">0.890 tCO₂e</td><td class="px-4 py-2.5 text-center"><span class="text-amber-500">★★★★★</span></td></tr>
+              <tr class="border-b border-gray-50"><td class="px-4 py-2.5 text-gray-700">Uber Trips</td><td class="px-4 py-2.5 text-gray-600">Road Transport</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full text-[10px] font-medium">Scope 1</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">0.008 tCO₂e</td><td class="px-4 py-2.5 text-center"><span class="text-amber-500">★★★★★</span></td></tr>
+              <tr><td class="px-4 py-2.5 text-gray-700">Office Supplies</td><td class="px-4 py-2.5 text-gray-600">Purchased Goods</td><td class="px-4 py-2.5"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">Scope 3</span></td><td class="px-4 py-2.5 text-right font-semibold text-gray-800">0.150 tCO₂e</td><td class="px-4 py-2.5 text-center"><span class="text-amber-500">★★★</span><span class="text-gray-300">★★</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-span-5 space-y-4">
+        <!-- Scope Breakdown -->
+        <div class="card-static p-4">
+          <h3 class="font-semibold text-sm text-gray-900 mb-3">Scope Breakdown</h3>
+          <div class="space-y-2 text-xs">
+            <div><div class="flex justify-between mb-1"><span class="text-gray-600">Scope 1 — Direct</span><span class="font-semibold text-gray-700">12.4 tCO₂e (8.7%)</span></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-orange-400 rounded-full" style="width:8.7%"></div></div></div>
+            <div><div class="flex justify-between mb-1"><span class="text-gray-600">Scope 2 — Energy</span><span class="font-semibold text-gray-700">45.6 tCO₂e (31.9%)</span></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-400 rounded-full" style="width:31.9%"></div></div></div>
+            <div><div class="flex justify-between mb-1"><span class="text-gray-600">Scope 3 — Value Chain</span><span class="font-semibold text-gray-700">84.8 tCO₂e (59.4%)</span></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-blue-400 rounded-full" style="width:59.4%"></div></div></div>
+          </div>
+        </div>
+
+        <!-- Decarbonization -->
+        <div class="card-static p-4">
+          <h3 class="font-semibold text-sm text-gray-900 mb-3">AI Recommendations</h3>
+          <div class="space-y-2 text-xs">
+            <div class="flex items-start gap-2 p-2.5 bg-brand-50 rounded-lg"><span class="w-5 h-5 bg-brand-500 rounded-full text-white flex items-center justify-center flex-shrink-0 text-[10px] font-bold">1</span><div><p class="font-medium text-gray-800">Switch to green cloud hosting</p><p class="text-gray-500">Potential: -18.4 tCO₂e/yr</p></div></div>
+            <div class="flex items-start gap-2 p-2.5 bg-brand-50 rounded-lg"><span class="w-5 h-5 bg-brand-500 rounded-full text-white flex items-center justify-center flex-shrink-0 text-[10px] font-bold">2</span><div><p class="font-medium text-gray-800">Consolidate travel with video calls</p><p class="text-gray-500">Potential: -12.1 tCO₂e/yr</p></div></div>
+            <div class="flex items-start gap-2 p-2.5 bg-brand-50 rounded-lg"><span class="w-5 h-5 bg-brand-500 rounded-full text-white flex items-center justify-center flex-shrink-0 text-[10px] font-bold">3</span><div><p class="font-medium text-gray-800">Install solar panels at HQ</p><p class="text-gray-500">Potential: -22.8 tCO₂e/yr</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ END-OF-DEMO OVERLAY ═══ -->
+<div class="demo-overlay" id="demoOverlay">
+  <div class="text-center px-8" style="max-width:600px">
+    <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-2xl shadow-brand-700/30 mb-6">
+      <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    </div>
+    <h2 class="font-heading text-3xl font-bold text-white mb-3">Zero-Touch Journey Complete</h2>
+    <p class="text-brand-200 text-sm leading-relaxed mb-8">From document capture to financial + ESG intelligence in under 500 milliseconds. No manual entry. No separate tools. One platform.</p>
+    <div class="flex items-center justify-center gap-4">
+      <button onclick="resetDemo()" class="px-6 py-3 bg-white/10 backdrop-blur border border-white/20 text-white rounded-xl font-medium text-sm hover:bg-white/20 transition">
+        <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Restart Demo
+      </button>
+      <a href="https://cloudcfo.ai" target="_blank" class="btn-gold text-sm inline-flex items-center gap-2">
+        Visit CloudCFO.ai
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+    </div>
+    <p class="mt-8 text-xs text-brand-300/60">Made with 🇲🇦 in Morocco · Powered by MerlinData.ai</p>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════
+let currentScreen = 0;
+const totalScreens = 6;
+let autoPlayInterval = null;
+let chartInstances = {};
+let screenInitialized = [false,false,false,false,false,false];
+let discoveryTimer = null;
+let pipelineTimer = null;
+
+const screenTitles = ['Welcome to CloudCFO','Connect Your Accounts','Auto-Discovery','Intelligent Extraction','Accounting & Tax','ESG & Sustainability'];
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function goToScreen(idx) {
+  if (idx < 0 || idx >= totalScreens || idx === currentScreen) return;
+  const prev = document.getElementById('screen' + currentScreen);
+  const next = document.getElementById('screen' + idx);
+  prev.classList.remove('active');
+  prev.classList.add('exit-left');
+  setTimeout(() => prev.classList.remove('exit-left'), 500);
+  next.classList.add('active');
+  currentScreen = idx;
+  updateNav();
+  initScreen(idx);
+  // Hide overlay if going back
+  document.getElementById('demoOverlay').classList.remove('show');
+}
+
+function nextScreen() {
+  if (currentScreen < totalScreens - 1) goToScreen(currentScreen + 1);
+  else showEndOverlay();
+}
+function prevScreen() { goToScreen(currentScreen - 1); }
+
+function updateNav() {
+  document.getElementById('screenTitle').textContent = screenTitles[currentScreen];
+  document.getElementById('stepIndicator').textContent = `Step ${currentScreen + 1} of ${totalScreens}`;
+  const segs = document.querySelectorAll('.progress-seg');
+  segs.forEach((s, i) => {
+    s.classList.remove('active','completed');
+    if (i < currentScreen) s.classList.add('completed');
+    else if (i === currentScreen) s.classList.add('active');
+  });
+  const btnPrev = document.getElementById('btnPrev');
+  btnPrev.style.opacity = currentScreen === 0 ? '0' : '1';
+  btnPrev.disabled = currentScreen === 0;
+  const btnNext = document.getElementById('btnNext');
+  btnNext.textContent = currentScreen === totalScreens - 1 ? 'Finish' : 'Next';
+}
+
+function resetDemo() {
+  document.getElementById('demoOverlay').classList.remove('show');
+  screenInitialized = [false,false,false,false,false,false];
+  connectedParadigms = new Set();
+  discoveryDocs = [];
+  clearInterval(discoveryTimer);
+  clearTimeout(pipelineTimer);
+  Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+  chartInstances = {};
+  goToScreen(0);
+}
+
+function showEndOverlay() {
+  document.getElementById('demoOverlay').classList.add('show');
+}
+
+function toggleAutoPlay() {
+  const btn = document.getElementById('autoPlayBtn');
+  if (autoPlayInterval) {
+    clearInterval(autoPlayInterval);
+    autoPlayInterval = null;
+    btn.classList.remove('text-brand-600','bg-brand-50');
+    btn.classList.add('text-gray-400');
+  } else {
+    btn.classList.add('text-brand-600','bg-brand-50');
+    btn.classList.remove('text-gray-400');
+    autoPlayInterval = setInterval(() => {
+      if (currentScreen < totalScreens - 1) nextScreen();
+      else { clearInterval(autoPlayInterval); autoPlayInterval = null; btn.classList.remove('text-brand-600','bg-brand-50'); btn.classList.add('text-gray-400'); showEndOverlay(); }
+    }, 8000);
+  }
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextScreen();
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevScreen();
+  else if (e.key === 'Escape') resetDemo();
+  else if (e.key >= '1' && e.key <= '6') goToScreen(parseInt(e.key) - 1);
+});
+
+// ═══════════════════════════════════════════════════════
+// SCREEN INITIALIZERS
+// ═══════════════════════════════════════════════════════
+function initScreen(idx) {
+  if (screenInitialized[idx]) return;
+  screenInitialized[idx] = true;
+  switch(idx) {
+    case 1: initOnboarding(); break;
+    case 2: initDiscovery(); break;
+    case 3: initExtraction(); break;
+    case 4: initAccounting(); break;
+    case 5: initESG(); break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SCREEN 2: ONBOARDING
+// ═══════════════════════════════════════════════════════
+let connectedParadigms = new Set();
+
+function connectParadigm(idx, type, btn) {
+  if (connectedParadigms.has(idx)) return;
+  // Simulate connection
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Connecting...';
+  btn.classList.add('opacity-70','pointer-events-none');
+  setTimeout(() => {
+    connectedParadigms.add(idx);
+    const card = document.getElementById('paradigm' + idx);
+    card.style.borderColor = '#22c55e';
+    card.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.15)';
+    // Hide buttons, show done message
+    const doneIds = ['autoDiscDone','notifDone','fwdDone','uploadDone'];
+    const done = document.getElementById(doneIds[idx]);
+    done.classList.remove('hidden');
+    done.style.display = 'flex';
+    // For paradigm 0, hide both buttons
+    if (idx === 0) document.getElementById('autoDiscBtns').style.display = 'none';
+    if (idx === 1) document.getElementById('notifBtn').style.display = 'none';
+    if (idx === 2) document.getElementById('fwdBtns').style.display = 'none';
+    if (idx === 3) document.getElementById('uploadZone').style.display = 'none';
+    // Update counter
+    const dot = document.getElementById('dot' + idx);
+    dot.style.background = '#22c55e';
+    document.getElementById('connCounter').textContent = `${connectedParadigms.size} of 4 paradigms connected`;
+    // Celebration when all 4
+    if (connectedParadigms.size === 4) {
+      document.getElementById('connCounter').innerHTML = '<span class="text-brand-600 font-semibold">All paradigms connected! 🎉</span>';
+    }
+  }, 1200);
+}
+
+function initOnboarding() { /* Cards already in HTML, just interactive */ }
+
+// ═══════════════════════════════════════════════════════
+// SCREEN 3: AUTO-DISCOVERY FEED
+// ═══════════════════════════════════════════════════════
+const sampleDocs = [
+  { source:'Gmail', color:'bg-red-100 text-red-700', type:'Invoice', title:'Invoice #2847 — TechSupply Ltd', amount:'$4,350.00', confidence:99.2, date:'Jan 15, 2026', icon:'📄' },
+  { source:'Drive', color:'bg-blue-100 text-blue-700', type:'Report', title:'Q4 Expense Report.xlsx', amount:'$12,847.00', confidence:97.5, date:'Jan 15, 2026', icon:'📊' },
+  { source:'WhatsApp', color:'bg-green-100 text-green-700', type:'Receipt', title:'Receipt — Cafe Maroc', amount:'MAD 245', confidence:96.8, date:'Jan 14, 2026', icon:'🧾' },
+  { source:'Notification', color:'bg-amber-100 text-amber-700', type:'Receipt', title:'Uber Trip Receipt', amount:'$34.50', confidence:99.5, date:'Jan 14, 2026', icon:'🚗' },
+  { source:'Gmail', color:'bg-red-100 text-red-700', type:'Statement', title:'Bank Statement BMCE Jan 2026', amount:'—', confidence:98.1, date:'Jan 14, 2026', icon:'🏦' },
+  { source:'Notification', color:'bg-amber-100 text-amber-700', type:'Receipt', title:'Glovo Order #G-4521', amount:'MAD 189', confidence:95.2, date:'Jan 13, 2026', icon:'🛵' },
+  { source:'Drive', color:'bg-blue-100 text-blue-700', type:'Contract', title:'Contract — Atlas Logistics', amount:'—', confidence:97.9, date:'Jan 13, 2026', icon:'📑' },
+  { source:'Telegram', color:'bg-sky-100 text-sky-700', type:'Invoice', title:'Invoice — Office Supplies Co', amount:'$892.00', confidence:98.7, date:'Jan 12, 2026', icon:'📦' },
+  { source:'Gmail', color:'bg-red-100 text-red-700', type:'Bill', title:'Utility Bill — Lydec', amount:'MAD 1,230', confidence:99.0, date:'Jan 12, 2026', icon:'💡' },
+  { source:'Notification', color:'bg-amber-100 text-amber-700', type:'Travel', title:'Royal Air Maroc CMN→CDG', amount:'MAD 4,800', confidence:98.4, date:'Jan 11, 2026', icon:'✈️' },
+];
+
+let discoveryDocs = [];
+function initDiscovery() {
+  discoveryDocs = [];
+  const feed = document.getElementById('discoveryFeed');
+  feed.innerHTML = '';
+  let i = 0;
+  discoveryTimer = setInterval(() => {
+    if (i >= sampleDocs.length) {
+      clearInterval(discoveryTimer);
+      document.getElementById('feedStatus').textContent = 'Scan complete';
+      const pBtn = document.getElementById('processAllBtn');
+      pBtn.style.opacity = '1'; pBtn.style.pointerEvents = 'all';
+      pBtn.classList.add('animate-pulse');
+      return;
+    }
+    const doc = sampleDocs[i];
+    discoveryDocs.push(doc);
+    const el = document.createElement('div');
+    el.className = 'flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-brand-200 transition';
+    el.style.animation = 'slideInUp 0.5s ease-out both';
+    el.innerHTML = `
+      <span class="text-lg">${doc.icon}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-0.5">
+          <span class="channel-badge ${doc.color}">${doc.source}</span>
+          <span class="text-xs font-semibold text-gray-800 truncate">${doc.title}</span>
+        </div>
+        <div class="flex items-center gap-3 text-[10px] text-gray-500">
+          <span>${doc.date}</span>
+          <span class="font-medium text-gray-700">${doc.amount}</span>
+          <span class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">${doc.type}</span>
+        </div>
+      </div>
+      <div class="text-right flex-shrink-0">
+        <div class="flex items-center gap-1">
+          <div class="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${doc.confidence}%;background:${doc.confidence>98?'#22c55e':doc.confidence>96?'#4ade80':'#fbbf24'}"></div></div>
+          <span class="text-[10px] font-mono font-semibold" style="color:${doc.confidence>98?'#16a34a':'#d97706'}">${doc.confidence}%</span>
+        </div>
+        <span class="text-[9px] text-gray-400 mt-0.5 block">Queued</span>
+      </div>`;
+    feed.prepend(el);
+    i++;
+    updateDiscoverySummary();
+  }, 1200);
+}
+
+function updateDiscoverySummary() {
+  const n = discoveryDocs.length;
+  document.getElementById('docCount').textContent = n;
+  // Total value
+  let total = 0;
+  discoveryDocs.forEach(d => {
+    const m = d.amount.replace(/[^0-9.]/g,'');
+    if (m) total += parseFloat(m);
+  });
+  document.getElementById('totalValue').textContent = '$' + Math.round(total).toLocaleString();
+  // Avg confidence
+  const avg = discoveryDocs.reduce((s,d) => s + d.confidence, 0) / n;
+  document.getElementById('avgConfidence').textContent = avg.toFixed(1) + '%';
+  // Queue bar
+  document.getElementById('queueBar').style.width = (n * 10) + '%';
+  document.getElementById('queueText').textContent = n + ' ready';
+  // Source chart
+  const srcCounts = {};
+  discoveryDocs.forEach(d => { srcCounts[d.source] = (srcCounts[d.source]||0) + 1; });
+  renderSourceChart(srcCounts);
+  // Type breakdown
+  const typeCounts = {};
+  discoveryDocs.forEach(d => { typeCounts[d.type] = (typeCounts[d.type]||0) + 1; });
+  const tb = document.getElementById('typeBreakdown');
+  tb.innerHTML = '';
+  const typeColors = {Invoice:'#3B82F6',Report:'#8B5CF6',Receipt:'#F59E0B',Statement:'#6B7280',Contract:'#059669',Bill:'#F97316',Travel:'#EC4899'};
+  Object.entries(typeCounts).forEach(([t,c]) => {
+    const pct = Math.round(c / n * 100);
+    tb.innerHTML += `<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${typeColors[t]||'#9CA3AF'}"></span><span class="text-xs text-gray-600 flex-1">${t}</span><span class="text-xs font-semibold text-gray-700">${c}</span><div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%;background:${typeColors[t]||'#9CA3AF'}"></div></div></div>`;
+  });
+}
+
+function renderSourceChart(data) {
+  const ctx = document.getElementById('sourceChart');
+  if (!ctx) return;
+  if (chartInstances.source) chartInstances.source.destroy();
+  const labels = Object.keys(data);
+  const values = Object.values(data);
+  const colors = {'Gmail':'#EF4444','Drive':'#3B82F6','WhatsApp':'#22C55E','Notification':'#F59E0B','Telegram':'#0EA5E9'};
+  chartInstances.source = new Chart(ctx, {
+    type:'doughnut',
+    data:{labels,datasets:[{data:values,backgroundColor:labels.map(l=>colors[l]||'#9CA3AF'),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:8,usePointStyle:true,pointStyleWidth:8,font:{size:10}}}},cutout:'65%'}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SCREEN 4: EXTRACTION ENGINE
+// ═══════════════════════════════════════════════════════
+const financialFields = [
+  ['Vendor','TechSupply Ltd'],['Invoice #','2847'],['Date','Jan 15, 2026'],['Due Date','Feb 14, 2026'],
+  ['Currency','USD'],['Subtotal','$4,350.00'],['Tax Rate','20%'],['Tax Amount','$870.00'],
+  ['Total','$5,220.00'],['Terms','Net 30'],['Category','IT Infrastructure'],['GL Code','6200']
+];
+const carbonFields = [
+  ['Scope','Scope 3 — Purchased Services'],['Category','Cloud Computing'],['Activity','1 Cloud Server × 12 months'],
+  ['Emission Factor','0.023 tCO₂e/server/mo (Climatiq)'],['Total Emissions','0.276 tCO₂e'],
+  ['Carbon Intensity','$18,913 / tCO₂e'],['Standard','GHG Protocol'],['Data Quality','4/5 — High']
+];
+
+function initExtraction() {
+  // Run pipeline animation
+  let step = 0;
+  const runPipe = () => {
+    if (step > 4) {
+      startFieldExtraction();
+      return;
+    }
+    const pipe = document.getElementById('pipe' + step);
+    pipe.classList.add('active','done');
+    pipe.querySelector('.step-circle').innerHTML = '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+    if (step > 0) document.getElementById('conn' + (step-1)).classList.add('done');
+    step++;
+    pipelineTimer = setTimeout(runPipe, 500);
+  };
+  setTimeout(runPipe, 400);
+}
+
+function startFieldExtraction() {
+  const container = document.getElementById('financialFields');
+  container.innerHTML = '';
+  let i = 0;
+  const addField = () => {
+    if (i >= financialFields.length) {
+      // Switch to carbon tab after short delay
+      setTimeout(() => {
+        switchExtTab('carbon');
+        startCarbonExtraction();
+      }, 800);
+      return;
+    }
+    const [label, value] = financialFields[i];
+    const conf = (96 + Math.random() * 3.5).toFixed(1);
+    const el = document.createElement('div');
+    el.className = 'flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg';
+    el.style.animation = 'slideInLeft 0.3s ease-out both';
+    el.innerHTML = `
+      <svg class="w-4 h-4 text-brand-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <span class="text-xs text-gray-500 w-20 flex-shrink-0">${label}</span>
+      <span class="text-xs font-semibold text-gray-800 flex-1">${value}</span>
+      <span class="text-[10px] text-brand-600 font-mono">${conf}%</span>`;
+    container.appendChild(el);
+    i++;
+    // Update metrics
+    document.getElementById('fieldsCount').textContent = `${i}/${financialFields.length + carbonFields.length}`;
+    setTimeout(addField, 180);
+  };
+  // Start timer animation
+  let ms = 0;
+  const timerEl = document.getElementById('extractionTimer');
+  const timerInterval = setInterval(() => {
+    ms += 17;
+    timerEl.textContent = ms + 'ms';
+    if (ms >= 487) { clearInterval(timerInterval); timerEl.textContent = '487ms'; }
+  }, 17);
+  document.getElementById('procTime').textContent = '487ms';
+  document.getElementById('confScore').textContent = '99.2%';
+  addField();
+}
+
+function startCarbonExtraction() {
+  const container = document.getElementById('carbonFields');
+  container.innerHTML = '';
+  let i = 0;
+  const addField = () => {
+    if (i >= carbonFields.length) {
+      document.getElementById('fieldsCount').textContent = `${financialFields.length + carbonFields.length}/${financialFields.length + carbonFields.length}`;
+      document.getElementById('verifyStatus').textContent = '✓ Auto';
+      return;
+    }
+    const [label, value] = carbonFields[i];
+    const conf = (95 + Math.random() * 4).toFixed(1);
+    const el = document.createElement('div');
+    el.className = 'flex items-center gap-3 p-2.5 bg-emerald-50/50 rounded-lg';
+    el.style.animation = 'slideInLeft 0.3s ease-out both';
+    el.innerHTML = `
+      <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <span class="text-xs text-gray-500 w-24 flex-shrink-0">${label}</span>
+      <span class="text-xs font-semibold text-gray-800 flex-1">${value}</span>
+      <span class="text-[10px] text-emerald-600 font-mono">${conf}%</span>`;
+    container.appendChild(el);
+    i++;
+    document.getElementById('fieldsCount').textContent = `${financialFields.length + i}/${financialFields.length + carbonFields.length}`;
+    setTimeout(addField, 220);
+  };
+  addField();
+}
+
+function switchExtTab(tab) {
+  document.getElementById('extFinancial').classList.toggle('hidden', tab !== 'financial');
+  document.getElementById('extCarbon').classList.toggle('hidden', tab !== 'carbon');
+  document.getElementById('tabFinancial').classList.toggle('active', tab === 'financial');
+  document.getElementById('tabCarbon').classList.toggle('active', tab === 'carbon');
+}
+
+// ═══════════════════════════════════════════════════════
+// SCREEN 5: ACCOUNTING DASHBOARD
+// ═══════════════════════════════════════════════════════
+function initAccounting() {
+  // Animate KPIs
+  document.querySelectorAll('.acct-kpi').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    animateValue(el, 0, target, 1500, prefix, suffix, true);
+  });
+  // Revenue vs Expenses line chart
+  const ctx1 = document.getElementById('acctLineChart');
+  if (chartInstances.acctLine) chartInstances.acctLine.destroy();
+  chartInstances.acctLine = new Chart(ctx1, {
+    type:'line',
+    data:{
+      labels:['Aug','Sep','Oct','Nov','Dec','Jan'],
+      datasets:[
+        {label:'Revenue',data:[720000,745000,780000,810000,830000,847250],borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,0.08)',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#16A34A',borderWidth:2},
+        {label:'Expenses',data:[480000,490000,495000,505000,515000,523890],borderColor:'#F43F5E',backgroundColor:'rgba(244,63,94,0.06)',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#F43F5E',borderWidth:2}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:12,usePointStyle:true,font:{size:10}}}},scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Math.round(v/1000)+'K',font:{size:10}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  // Expense Doughnut
+  const ctx2 = document.getElementById('acctDoughnut');
+  if (chartInstances.acctDonut) chartInstances.acctDonut.destroy();
+  chartInstances.acctDonut = new Chart(ctx2, {
+    type:'doughnut',
+    data:{labels:['Payroll','Operations','Marketing','IT','Other'],datasets:[{data:[312000,98000,67000,32000,14890],backgroundColor:['#3B82F6','#F59E0B','#8B5CF6','#22C55E','#94A3B8'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:8,usePointStyle:true,pointStyleWidth:8,font:{size:10}}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SCREEN 6: ESG DASHBOARD
+// ═══════════════════════════════════════════════════════
+function initESG() {
+  // KPIs
+  document.querySelectorAll('.esg-kpi').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    const decimals = parseInt(el.dataset.decimals) || 0;
+    const comma = el.dataset.format === 'comma';
+    animateValue(el, 0, target, 1500, prefix, suffix, comma, decimals);
+  });
+
+  // ESG Score Gauge
+  const gaugeCtx = document.getElementById('esgScoreGauge');
+  if (gaugeCtx) {
+    if (chartInstances.gauge) chartInstances.gauge.destroy();
+    chartInstances.gauge = new Chart(gaugeCtx, {
+      type:'doughnut',
+      data:{datasets:[{data:[74,26],backgroundColor:['#22C55E','#E5E7EB'],borderWidth:0}]},
+      options:{responsive:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:false}},rotation:-90,circumference:180}
+    });
+  }
+
+  // Emissions by Scope (stacked bar)
+  const ctx3 = document.getElementById('esgScopeChart');
+  if (chartInstances.esgScope) chartInstances.esgScope.destroy();
+  chartInstances.esgScope = new Chart(ctx3, {
+    type:'bar',
+    data:{
+      labels:['Aug','Sep','Oct','Nov','Dec','Jan'],
+      datasets:[
+        {label:'Scope 1',data:[10.2,11.0,11.5,11.8,12.0,12.4],backgroundColor:'#F97316',borderRadius:2},
+        {label:'Scope 2',data:[42.0,43.2,43.8,44.5,45.0,45.6],backgroundColor:'#22C55E',borderRadius:2},
+        {label:'Scope 3',data:[78.0,80.0,81.5,82.8,83.5,84.8],backgroundColor:'#3B82F6',borderRadius:2}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:8,usePointStyle:true,font:{size:10}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},y:{stacked:true,ticks:{callback:v=>v+' t',font:{size:10}},grid:{color:'#f1f5f9'}}}}
+  });
+
+  // Emissions by Category doughnut
+  const ctx4 = document.getElementById('esgCategoryChart');
+  if (chartInstances.esgCat) chartInstances.esgCat.destroy();
+  chartInstances.esgCat = new Chart(ctx4, {
+    type:'doughnut',
+    data:{labels:['Energy','Transport','Procurement','Waste'],datasets:[{data:[32,24,28,16],backgroundColor:['#F59E0B','#3B82F6','#8B5CF6','#6B7280'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:8,usePointStyle:true,pointStyleWidth:8,font:{size:10}}}}}
+  });
+
+  // Show end overlay after 3s on last screen
+  setTimeout(() => { if (currentScreen === 5) showEndOverlay(); }, 4000);
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function animateValue(el, start, end, duration, prefix='', suffix='', comma=false, decimals=0) {
+  const startTime = performance.now();
+  const step = (now) => {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease out cubic
+    const current = start + (end - start) * eased;
+    let display = decimals > 0 ? current.toFixed(decimals) : Math.round(current);
+    if (comma) display = Number(display).toLocaleString();
+    el.textContent = prefix + display + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// Init first screen
+updateNav();
+</script>
+</body>
+</html>
